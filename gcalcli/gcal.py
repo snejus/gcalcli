@@ -1245,6 +1245,13 @@ class GoogleCalendarInterface:
             day_num = self._cal_monday(int(start.strftime('%w')))
             start = (start - timedelta(days=day_num))
             end = (start + timedelta(days=(count * 7)))
+
+            event_list = self._search_for_events(start, end, None)
+            for event in event_list:
+                event.pop("s", None)
+                event.pop("e", None)
+
+            print(json.dumps(event_list))
         else:  # cmd == 'calm':
             start = (start - timedelta(days=(start.day - 1)))
             end_month = (start.month + 1)
@@ -1263,15 +1270,8 @@ class GoogleCalendarInterface:
             count = int(total_days / 7)
             if total_days % 7:
                 count += 1
-
-        event_list = self._search_for_events(start, end, None)
-        for event in event_list:
-            event.pop("s", None)
-            event.pop("e", None)
-
-        print(json.dumps(event_list))
-
-        # self._GraphEvents(cmd, start, count, event_list)
+            event_list = self._search_for_events(start, end, None)
+            self._GraphEvents(cmd, start, count, event_list)
 
     def QuickAddEvent(self, event_text, reminders=None):
         """Wrapper around Google Calendar API's quickAdd"""
