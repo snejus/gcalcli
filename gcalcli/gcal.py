@@ -1145,11 +1145,16 @@ class GoogleCalendarInterface:
     def _display_queried_events(self, start, end, search=None,
                                 year_date=False):
         event_list = self._search_for_events(start, end, search)
+        for event in event_list:
+            event.pop("s", None)
+            event.pop("e", None)
 
-        if self.options.get('tsv'):
-            return self._tsv(start, event_list)
-        else:
-            return self._iterate_events(start, event_list, year_date=year_date)
+        print(json.dumps(event_list))
+
+        # if self.options.get('tsv'):
+        #     return self._tsv(start, event_list)
+        # else:
+        #     return self._iterate_events(start, event_list, year_date=year_date)
 
     def TextQuery(self, search_text='', start=None, end=None):
         if not search_text:
@@ -1258,8 +1263,13 @@ class GoogleCalendarInterface:
                 count += 1
 
         event_list = self._search_for_events(start, end, None)
+        for event in event_list:
+            event.pop("s", None)
+            event.pop("e", None)
 
-        self._GraphEvents(cmd, start, count, event_list)
+        print(json.dumps(event_list))
+
+        # self._GraphEvents(cmd, start, count, event_list)
 
     def QuickAddEvent(self, event_text, reminders=None):
         """Wrapper around Google Calendar API's quickAdd"""
