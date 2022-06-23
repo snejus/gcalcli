@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "gcalcli"
+version = "4.3.0"
+description = "Google Calendar Command Line Interface"
+authors = ["Eric Davis, Brian Hartvigsen, Joshua Crowgey <email@email.com>"]
+readme = "README.md"
+license = "Proprietary"
+homepage = "https://github.com/insanum/gcalcli"
+repository = "https://github.com/insanum/gcalcli"
+include = ["ChangeLog", "README.md"]
+
+[tool.poetry.urls]
+changelog = "https://github.com/insanum/gcalcli/blob/master/ChangeLog"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+google-api-python-client = ">=1.4"
+httplib2 = "*"
+oauth2client = "*"
+parsedatetime = "*"
+python-dateutil = "*"
+
+[tool.poetry.scripts]
+gcalcli = "gcalcli.cli:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
