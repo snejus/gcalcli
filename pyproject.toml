@@ -13,7 +13,7 @@ include = ["ChangeLog", "README.md"]
 changelog = "https://github.com/insanum/gcalcli/blob/master/ChangeLog"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.8"
 google-api-python-client = ">=1.4"
 httplib2 = "*"
 oauth2client = "*"
@@ -22,6 +22,9 @@ python-dateutil = "*"
 
 [tool.poetry.scripts]
 gcalcli = "gcalcli.cli:main"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.11.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
