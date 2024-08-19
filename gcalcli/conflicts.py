@@ -7,10 +7,7 @@ class ShowConflicts:
     active_events: List[Event] = []
 
     def __init__(self, show) -> None:
-        if show:
-            self.show = show
-        else:
-            self.show = self._default_show
+        self.show = show or self._default_show
 
     def show_conflicts(self, latest_event):
         """Events must be passed in chronological order."""

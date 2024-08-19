@@ -29,9 +29,9 @@ def parse_reminder(rem):
     if not match:
         # Allow argparse to generate a message when parsing options
         return None
-    n = int(match.group(1))
-    t = match.group(2)
-    m = match.group(3)
+    n = int(match[1])
+    t = match[2]
+    m = match[3]
     if t == "w":
         n = n * 7 * 24 * 60
     elif t == "d":
@@ -50,23 +50,23 @@ def set_locale(new_locale):
         locale.setlocale(locale.LC_ALL, new_locale)
     except locale.Error as exc:
         raise ValueError(
-            "Error: " + str(exc) + "!\n Check supported locales of your system.\n"
-        )
+            f"Error: {exc!s}" + "!\n Check supported locales of your system.\n"
+        ) from exc
 
 
 def get_times_from_duration(when, duration=0, allday=False):
     try:
         start = get_time_from_str(when)
-    except Exception:
+    except Exception as e:
         msg = f"Date and time is invalid: {when}\n"
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     if allday:
         try:
             stop = start + timedelta(days=float(duration))
-        except Exception:
+        except Exception as exc:
             msg = f"Duration time (days) is invalid: {duration}\n"
-            raise ValueError(msg)
+            raise ValueError(msg) from exc
 
         start = start.date().isoformat()
         stop = stop.date().isoformat()
@@ -74,9 +74,9 @@ def get_times_from_duration(when, duration=0, allday=False):
     else:
         try:
             stop = start + get_timedelta_from_str(duration)
-        except Exception:
+        except Exception as exc:
             msg = f"Duration time is invalid: {duration}\n"
-            raise ValueError(msg)
+            raise ValueError(msg) from exc
 
         start = start.isoformat()
         stop = stop.isoformat()
@@ -94,11 +94,11 @@ def get_time_from_str(when):
 
     try:
         event_time = dateutil_parse(when, default=zero_oclock_today)
-    except ValueError:
+    except ValueError as e:
         struct, result = fuzzy_date_parse(when)
         if not result:
             msg = f"Date and time is invalid: {when}"
-            raise ValueError(msg)
+            raise ValueError(msg) from e
         event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
     return event_time
@@ -118,15 +118,13 @@ def get_timedelta_from_str(delta):
     if parsed_delta is None:
         parts = DURATION_REGEX.match(delta)
         if parts is not None:
-            try:
+            with contextlib.suppress(ValueError):
                 time_params = {
                     name: float(param)
                     for name, param in parts.groupdict().items()
                     if param
                 }
                 parsed_delta = timedelta(**time_params)
-            except ValueError:
-                pass
     if parsed_delta is None:
         dt, result = fuzzy_datetime_parse(delta, sourceTime=datetime.min)
         if result:

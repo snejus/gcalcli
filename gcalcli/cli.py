@@ -85,7 +85,7 @@ def run_add_prompt(parsed_args, printer):
             if r == ".":
                 break
             n, m = utils.parse_reminder(str(r))
-            parsed_args.reminders.append(str(n) + " " + m)
+            parsed_args.reminders.append(f"{n!s} {m}")
 
 
 def main():
@@ -93,14 +93,7 @@ def main():
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser("~/.gcalclirc")
-        if os.path.exists(gcalclirc):
-            # We want .gcalclirc to be sourced before any other --flagfile
-            # params since we may be told to use a specific config folder, we
-            # need to store generated argv in temp variable
-            tmp_argv = [f"@{gcalclirc}", *argv]
-        else:
-            tmp_argv = argv
-
+        tmp_argv = [f"@{gcalclirc}", *argv] if os.path.exists(gcalclirc) else argv
         (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
@@ -114,11 +107,7 @@ def main():
             rc_path = [
                 f"@{parsed_args.config_folder}/gcalclirc",
             ]
-            if not parsed_args.includeRc:
-                tmp_argv = rc_path + argv
-            else:
-                tmp_argv = rc_path + tmp_argv
-
+            tmp_argv = rc_path + tmp_argv if parsed_args.includeRc else rc_path + argv
         (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
 
     printer = Printer(

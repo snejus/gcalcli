@@ -17,14 +17,14 @@ from gcalcli.cli import parse_cal_names
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.utils import parse_reminder
 
-TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + "/data"
+TEST_DATA_DIR = f"{os.path.dirname(os.path.abspath(__file__))}/data"
 
 
 # TODO: These are more like placeholders for proper unit tests
 #       We just try the commands and make sure no errors occur.
 def test_list(capsys, PatchedGCalI):
     gcal = PatchedGCalI(**vars(get_color_parser().parse_args([])))
-    with open(TEST_DATA_DIR + "/cal_list.json", encoding="utf-8") as cl:
+    with open(f"{TEST_DATA_DIR}/cal_list.json", encoding="utf-8") as cl:
         cal_count = len(load(cl)["items"])
 
     # test data has 6 cals
@@ -226,7 +226,7 @@ def test_modify_event(PatchedGCalI):
 def test_import(PatchedGCalI):
     cal_names = parse_cal_names(["jcrowgey@uw.edu"])
     gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
-    vcal_path = TEST_DATA_DIR + "/vv.txt"
+    vcal_path = f"{TEST_DATA_DIR}/vv.txt"
     assert gcal.ImportICS(icsFile=open(vcal_path, encoding="utf-8"))
 
 

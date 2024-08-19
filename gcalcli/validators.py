@@ -43,12 +43,13 @@ def color_validator(input_str):
     try:
         assert input_str in {*VALID_OVERRIDE_COLORS, ""}
         return input_str
-    except AssertionError:
+    except AssertionError as e:
         raise ValidationError(
-            "Expected colors are: "
-            + ", ".join(color for color in VALID_OVERRIDE_COLORS)
-            + ". (Ctrl-C to exit)\n"
-        )
+
+                ("Expected colors are: " + ", ".join(VALID_OVERRIDE_COLORS))
+                + ". (Ctrl-C to exit)\n"
+
+        ) from e
 
 
 def str_to_int_validator(input_str):
@@ -59,8 +60,8 @@ def str_to_int_validator(input_str):
     try:
         int(input_str)
         return input_str
-    except ValueError:
-        raise ValidationError("Input here must be a number. (Ctrl-C to exit)\n")
+    except ValueError as e:
+        raise ValidationError("Input here must be a number. (Ctrl-C to exit)\n") from e
 
 
 def parsable_date_validator(input_str):
@@ -71,12 +72,12 @@ def parsable_date_validator(input_str):
     try:
         get_time_from_str(input_str)
         return input_str
-    except ValueError:
+    except ValueError as e:
         raise ValidationError(
             "Expected format: a date (e.g. 2019-01-01, tomorrow 10am, "
             "2nd Jan, Jan 4th, etc) or valid time if today. "
             "(Ctrl-C to exit)\n"
-        )
+        ) from e
 
 
 def parsable_duration_validator(input_str):
@@ -87,10 +88,10 @@ def parsable_duration_validator(input_str):
     try:
         get_timedelta_from_str(input_str)
         return input_str
-    except ValueError:
+    except ValueError as e:
         raise ValidationError(
             "Expected format: a duration (e.g. 1m, 1s, 1h3m)(Ctrl-C to exit)\n"
-        )
+        ) from e
 
 
 def str_allow_empty_validator(input_str):
@@ -117,7 +118,7 @@ def reminder_validator(input_str):
     if match or input_str == ".":
         return input_str
     raise ValidationError(
-        "Expected format: <number><w|d|h|m> " "<popup|email|sms>. (Ctrl-C to exit)\n"
+        "Expected format: <number><w|d|h|m> <popup|email|sms>. (Ctrl-C to exit)\n"
     )
 
 

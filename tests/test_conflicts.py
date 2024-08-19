@@ -26,7 +26,7 @@ def test_finds_no_conflicts_for_one_event():
     conflicts = []
     show_conflicts = ShowConflicts(conflicts.append)
     show_conflicts.show_conflicts(minimal_event)
-    assert conflicts == []
+    assert not conflicts
 
 
 def test_finds_conflicts_for_second_overlapping_event():
@@ -42,4 +42,4 @@ def test_does_not_find_conflict_for_second_non_overlapping_event():
     show_conflicts = ShowConflicts(conflicts.append)
     show_conflicts.show_conflicts(minimal_event)
     show_conflicts.show_conflicts(minimal_event_nonoverlapping)
-    assert conflicts == []
+    assert not conflicts

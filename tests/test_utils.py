@@ -33,8 +33,8 @@ def test_get_parsed_timedelta_from_str():
 
 def test_get_times_from_duration():
     begin_1970 = "1970-01-01"
-    begin_1970_midnight = begin_1970 + "T00:00:00+00:00"
-    two_hrs_later = begin_1970 + "T02:00:00+00:00"
+    begin_1970_midnight = f"{begin_1970}T00:00:00+00:00"
+    two_hrs_later = f"{begin_1970}T02:00:00+00:00"
     next_day = "1970-01-02"
     assert (begin_1970_midnight, two_hrs_later) == utils.get_times_from_duration(
         begin_1970_midnight, duration=120

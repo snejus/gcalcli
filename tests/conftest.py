@@ -10,7 +10,7 @@ from gcalcli.argparsers import get_cal_query_parser, get_color_parser, get_outpu
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer
 
-TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + "/data"
+TEST_DATA_DIR = f"{os.path.dirname(os.path.abspath(__file__))}/data"
 
 mock_event = [
     {
@@ -71,14 +71,14 @@ def PatchedGCalIForEvents(monkeypatch):
 
     def mocked_calendar_service(self):
         http = HttpMock(
-            TEST_DATA_DIR + "/cal_service_discovery.json", {"status": "200"}
+            f"{TEST_DATA_DIR}/cal_service_discovery.json", {"status": "200"}
         )
         if not self.cal_service:
             self.cal_service = build(serviceName="calendar", version="v3", http=http)
         return self.cal_service
 
     def mocked_calendar_list(self):
-        http = HttpMock(TEST_DATA_DIR + "/cal_list.json", {"status": "200"})
+        http = HttpMock(f"{TEST_DATA_DIR}/cal_list.json", {"status": "200"})
         request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
         self.all_cals = list(cal_list["items"])
@@ -111,14 +111,14 @@ def PatchedGCalIForEvents(monkeypatch):
 def PatchedGCalI(monkeypatch):
     def mocked_calendar_service(self):
         http = HttpMock(
-            TEST_DATA_DIR + "/cal_service_discovery.json", {"status": "200"}
+            f"{TEST_DATA_DIR}/cal_service_discovery.json", {"status": "200"}
         )
         if not self.cal_service:
             self.cal_service = build(serviceName="calendar", version="v3", http=http)
         return self.cal_service
 
     def mocked_calendar_list(self):
-        http = HttpMock(TEST_DATA_DIR + "/cal_list.json", {"status": "200"})
+        http = HttpMock(f"{TEST_DATA_DIR}/cal_list.json", {"status": "200"})
         request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
         self.all_cals = list(cal_list["items"])

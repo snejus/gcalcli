@@ -24,7 +24,7 @@ def test_all_colors():
         out = StringIO()
         cp.msg("msg", color_name, file=out)
         out.seek(0)
-        assert out.read() == cp.colors[color_name] + "msg" + "\033[0m"
+        assert out.read() == f"{cp.colors[color_name]}msg" + "\033[0m"
 
 
 def test_red_msg():

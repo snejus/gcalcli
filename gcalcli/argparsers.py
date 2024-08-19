@@ -211,7 +211,7 @@ def get_color_parser():
     ]
 
     for arg, color, msg in COLOR_PARSER_OPTIONS:
-        arg = "--color-" + arg
+        arg = f"--color-{arg}"
         color_parser.add_argument(arg, default=color, type=valid_color_name, help=msg)
 
     return color_parser
