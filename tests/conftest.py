@@ -3,9 +3,10 @@ import sys
 from datetime import datetime
 
 import pytest
-from apiclient.discovery import HttpMock, build
 from dateutil.tz import tzlocal
-
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import HttpMock
 from gcalcli.argparsers import get_cal_query_parser, get_color_parser, get_output_parser
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer

@@ -13,6 +13,7 @@ from gcalcli.argparsers import (
     get_start_end_parser,
     get_updates_parser,
 )
+from googleapiclient.errors import HttpError
 from gcalcli.cli import parse_cal_names
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.utils import parse_reminder
