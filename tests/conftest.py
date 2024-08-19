@@ -1,10 +1,10 @@
-from datetime import datetime
 import os
 import sys
+from datetime import datetime
 
-from apiclient.discovery import build, HttpMock
-from dateutil.tz import tzlocal
 import pytest
+from apiclient.discovery import HttpMock, build
+from dateutil.tz import tzlocal
 
 from gcalcli.argparsers import get_cal_query_parser, get_color_parser, get_output_parser
 from gcalcli.gcal import GoogleCalendarInterface

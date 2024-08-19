@@ -1,6 +1,6 @@
+import os
 from datetime import datetime
 from json import load
-import os
 
 from dateutil.tz import tzutc
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from dateutil.tz import UTC
 import pytest
+from dateutil.tz import UTC
 
 from gcalcli import utils
 

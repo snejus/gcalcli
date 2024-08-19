@@ -1,8 +1,6 @@
-from collections import namedtuple
-from csv import DictReader, excel_tab
-from datetime import date, datetime, timedelta
-from itertools import chain
+import contextlib
 import json
+import operator
 import os
 import random
 import re
@@ -10,15 +8,19 @@ import shlex
 import sys
 import textwrap
 import time
+from collections import namedtuple
+from csv import DictReader, excel_tab
+from datetime import date, datetime, timedelta
+from itertools import chain
 from typing import List
 from unicodedata import east_asian_width
 
+import httplib2
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-import httplib2
 from oauth2client import tools
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
@@ -27,13 +29,11 @@ from . import __program__, __version__, actions, utils
 from ._types import Cache, CalendarListEntry
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
-from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
+from .details import ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS, _valid_title
 from .exceptions import GcalcliError
 from .printer import Printer
 from .utils import days_since_epoch, is_all_day
 from .validators import (
-    get_input,
-    get_override_color_id,
     PARSABLE_DATE,
     PARSABLE_DURATION,
     REMINDER,
@@ -41,9 +41,9 @@ from .validators import (
     STR_NOT_EMPTY,
     STR_TO_INT,
     VALID_COLORS,
+    get_input,
+    get_override_color_id,
 )
-import operator
-import contextlib
 
 try:
     import cPickle as pickle

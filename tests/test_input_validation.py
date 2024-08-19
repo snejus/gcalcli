@@ -8,8 +8,8 @@ from gcalcli.validators import (
     STR_NOT_EMPTY,
     STR_TO_INT,
     VALID_COLORS,
-    validate_input,
     ValidationError,
+    validate_input,
 )
 
 # Tests required:

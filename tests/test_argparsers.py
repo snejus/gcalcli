@@ -1,5 +1,5 @@
-from collections import namedtuple
 import shlex
+from collections import namedtuple
 
 import pytest
 

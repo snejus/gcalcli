@@ -2,8 +2,8 @@ import argparse
 import copy as _copy
 import datetime
 import locale
-from shutil import get_terminal_size
 import sys
+from shutil import get_terminal_size
 
 from oauth2client import tools
 
