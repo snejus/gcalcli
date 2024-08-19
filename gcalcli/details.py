@@ -10,23 +10,22 @@ from dateutil.parser import isoparse, parse
 from .exceptions import ReadonlyCheckError, ReadonlyError
 from .utils import is_all_day
 
-FMT_DATE = '%Y-%m-%d'
-FMT_TIME = '%H:%M'
+FMT_DATE = "%Y-%m-%d"
+FMT_TIME = "%H:%M"
 TODAY = datetime.now().date()
-ACTION_DEFAULT = 'patch'
+ACTION_DEFAULT = "patch"
 
-URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
-                         ('hangout_link', 'hangoutLink')])
-ENTRY_POINT_PROPS = OrderedDict([('conference_entry_point_type',
-                                  'entryPointType'),
-                                 ('conference_uri', 'uri')])
+URL_PROPS = OrderedDict([("html_link", "htmlLink"), ("hangout_link", "hangoutLink")])
+ENTRY_POINT_PROPS = OrderedDict(
+    [("conference_entry_point_type", "entryPointType"), ("conference_uri", "uri")]
+)
 
 
 def _valid_title(event):
-    if 'summary' in event and event['summary'].strip():
-        return event['summary']
+    if "summary" in event and event["summary"].strip():
+        return event["summary"]
     else:
-        return '(No title)'
+        return "(No title)"
 
 
 class Handler:
@@ -63,7 +62,7 @@ class SimpleSingleFieldHandler(SingleFieldHandler):
 
     @classmethod
     def _get(cls, event):
-        return event.get(cls.fieldnames[0], '')
+        return event.get(cls.fieldnames[0], "")
 
     @classmethod
     def _patch(cls, event, value):
@@ -73,14 +72,14 @@ class SimpleSingleFieldHandler(SingleFieldHandler):
 class Time(Handler):
     """Handler for dates and times."""
 
-    fieldnames = ['start_date', 'start_time', 'end_date', 'end_time']
+    fieldnames = ["start_date", "start_time", "end_date", "end_time"]
 
     @classmethod
     def _datetime_to_fields(cls, instant, all_day):
         instant_date = instant.strftime(FMT_DATE)
 
         if all_day:
-            instant_time = ''
+            instant_time = ""
         else:
             instant_time = instant.strftime(FMT_TIME)
 
@@ -90,25 +89,25 @@ class Time(Handler):
     def get(cls, event):
         all_day = is_all_day(event)
 
-        start_fields = cls._datetime_to_fields(event['s'], all_day)
-        end_fields = cls._datetime_to_fields(event['e'], all_day)
+        start_fields = cls._datetime_to_fields(event["s"], all_day)
+        end_fields = cls._datetime_to_fields(event["e"], all_day)
 
         return start_fields + end_fields
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
-        instant_name, _, unit = fieldname.partition('_')
+        instant_name, _, unit = fieldname.partition("_")
 
-        assert instant_name in {'start', 'end'}
+        assert instant_name in {"start", "end"}
 
-        if unit == 'date':
+        if unit == "date":
             instant = event[instant_name] = {}
             instant_date = parse(value, default=TODAY)
 
-            instant['date'] = instant_date.isoformat()
-            instant['dateTime'] = None  # clear any previous non-all-day time
+            instant["date"] = instant_date.isoformat()
+            instant["dateTime"] = None  # clear any previous non-all-day time
         else:
-            assert unit == 'time'
+            assert unit == "time"
 
             # If the time field is empty, do nothing.
             # This enables all day events.
@@ -117,12 +116,12 @@ class Time(Handler):
 
             # date must be an earlier TSV field than time
             instant = event[instant_name]
-            instant_date = isoparse(instant['date'])
+            instant_date = isoparse(instant["date"])
             instant_datetime = parse(value, default=instant_date)
 
-            instant['date'] = None  # clear all-day date
-            instant['dateTime'] = instant_datetime.isoformat()
-            instant['timeZone'] = cal['timeZone']
+            instant["date"] = None  # clear all-day date
+            instant["dateTime"] = instant_datetime.isoformat()
+            instant["timeZone"] = cal["timeZone"]
 
 
 class Url(Handler):
@@ -132,15 +131,17 @@ class Url(Handler):
 
     @classmethod
     def get(cls, event):
-        return [event.get(prop, '') for prop in URL_PROPS.values()]
+        return [event.get(prop, "") for prop in URL_PROPS.values()]
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
-        if fieldname == 'html_link':
-            raise ReadonlyError(fieldname,
-                                'It is not possible to verify that the value '
-                                'has not changed. '
-                                'Remove it from the input.')
+        if fieldname == "html_link":
+            raise ReadonlyError(
+                fieldname,
+                "It is not possible to verify that the value "
+                "has not changed. "
+                "Remove it from the input.",
+            )
 
         prop = URL_PROPS[fieldname]
 
@@ -148,7 +149,7 @@ class Url(Handler):
         # match the desired patch. This requires an additional API query for
         # each row, so best to avoid attempting to update these fields.
 
-        curr_value = event.get(prop, '')
+        curr_value = event.get(prop, "")
 
         if curr_value != value:
             raise ReadonlyCheckError(fieldname, curr_value, value)
@@ -161,17 +162,16 @@ class Conference(Handler):
 
     @classmethod
     def get(cls, event):
-        if 'conferenceData' not in event:
-            return ['', '']
+        if "conferenceData" not in event:
+            return ["", ""]
 
-        data = event['conferenceData']
+        data = event["conferenceData"]
 
         # only display first entry point for TSV
         # https://github.com/insanum/gcalcli/issues/533
-        entry_point = data['entryPoints'][0]
+        entry_point = data["entryPoints"][0]
 
-        return [entry_point.get(prop, '')
-                for prop in ENTRY_POINT_PROPS.values()]
+        return [entry_point.get(prop, "") for prop in ENTRY_POINT_PROPS.values()]
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -180,8 +180,8 @@ class Conference(Handler):
 
         prop = ENTRY_POINT_PROPS[fieldname]
 
-        data = event.setdefault('conferenceData', {})
-        entry_points = data.setdefault('entryPoints', [])
+        data = event.setdefault("conferenceData", {})
+        entry_points = data.setdefault("entryPoints", [])
         if not entry_points:
             entry_points.append({})
 
@@ -192,7 +192,7 @@ class Conference(Handler):
 class Title(SingleFieldHandler):
     """Handler for title."""
 
-    fieldnames = ['title']
+    fieldnames = ["title"]
 
     @classmethod
     def _get(cls, event):
@@ -200,33 +200,33 @@ class Title(SingleFieldHandler):
 
     @classmethod
     def _patch(cls, event, value):
-        event['summary'] = value
+        event["summary"] = value
 
 
 class Location(SimpleSingleFieldHandler):
     """Handler for location."""
 
-    fieldnames = ['location']
+    fieldnames = ["location"]
 
 
 class Description(SimpleSingleFieldHandler):
     """Handler for description."""
 
-    fieldnames = ['description']
+    fieldnames = ["description"]
 
 
 class Calendar(SingleFieldHandler):
     """Handler for calendar."""
 
-    fieldnames = ['calendar']
+    fieldnames = ["calendar"]
 
     @classmethod
     def _get(cls, event):
-        return event['gcalcli_cal']['summary']
+        return event["gcalcli_cal"]["summary"]
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
-        curr_value = cal['summary']
+        curr_value = cal["summary"]
 
         if curr_value != value:
             raise ReadonlyCheckError(fieldname, curr_value, value)
@@ -235,53 +235,61 @@ class Calendar(SingleFieldHandler):
 class Email(SingleFieldHandler):
     """Handler for emails."""
 
-    fieldnames = ['email']
+    fieldnames = ["email"]
 
     @classmethod
     def _get(cls, event):
-        return event['creator'].get('email', '')
+        return event["creator"].get("email", "")
 
 
 class ID(SimpleSingleFieldHandler):
     """Handler for event ID."""
 
-    fieldnames = ['id']
+    fieldnames = ["id"]
 
 
 class Action(SimpleSingleFieldHandler):
     """Handler specifying event processing during an update."""
 
-    fieldnames = ['action']
+    fieldnames = ["action"]
 
     @classmethod
     def _get(cls, event):
         return ACTION_DEFAULT
 
 
-HANDLERS = OrderedDict([('id', ID),
-                        ('time', Time),
-                        ('url', Url),
-                        ('conference', Conference),
-                        ('title', Title),
-                        ('location', Location),
-                        ('description', Description),
-                        ('calendar', Calendar),
-                        ('email', Email),
-                        ('action', Action)])
+HANDLERS = OrderedDict(
+    [
+        ("id", ID),
+        ("time", Time),
+        ("url", Url),
+        ("conference", Conference),
+        ("title", Title),
+        ("location", Location),
+        ("description", Description),
+        ("calendar", Calendar),
+        ("email", Email),
+        ("action", Action),
+    ]
+)
 HANDLERS_READONLY = {Url, Calendar}
 
-FIELD_HANDLERS = dict(chain.from_iterable(
-    (((fieldname, handler)
-      for fieldname in handler.fieldnames)
-     for handler in HANDLERS.values())))
+FIELD_HANDLERS = dict(
+    chain.from_iterable(
+        (
+            ((fieldname, handler) for fieldname in handler.fieldnames)
+            for handler in HANDLERS.values()
+        )
+    )
+)
 
-FIELDNAMES_READONLY = frozenset(fieldname
-                                for fieldname, handler
-                                in FIELD_HANDLERS.items()
-                                if handler in HANDLERS_READONLY)
+FIELDNAMES_READONLY = frozenset(
+    fieldname
+    for fieldname, handler in FIELD_HANDLERS.items()
+    if handler in HANDLERS_READONLY
+)
 
-_DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
-                             'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ["length", "reminders", "attendees", "attachments", "end"]
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
-DETAILS_DEFAULT = {'time', 'title'}
+DETAILS_DEFAULT = {"time", "title"}

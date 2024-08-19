@@ -14,7 +14,7 @@ def test_get_argparser():
 
 def test_reminder_parser():
     remind_parser = argparsers.get_remind_parser()
-    argv = shlex.split('--reminder invalid reminder')
+    argv = shlex.split("--reminder invalid reminder")
     with pytest.raises(SystemExit):
         remind_parser.parse_args(argv)
 
@@ -24,7 +24,7 @@ def test_reminder_parser():
 
 def test_output_parser(monkeypatch):
     def sub_terminal_size(columns):
-        ts = namedtuple('terminal_size', ['lines', 'columns'])
+        ts = namedtuple("terminal_size", ["lines", "columns"])
 
         def fake_get_terminal_size():
             return ts(123, columns)
@@ -32,21 +32,20 @@ def test_output_parser(monkeypatch):
         return fake_get_terminal_size
 
     output_parser = argparsers.get_output_parser()
-    argv = shlex.split('-w 9')
+    argv = shlex.split("-w 9")
     with pytest.raises(SystemExit):
         output_parser.parse_args(argv)
 
-    argv = shlex.split('-w 10')
+    argv = shlex.split("-w 10")
     assert output_parser.parse_args(argv).cal_width == 10
 
-    argv = shlex.split('')
-    monkeypatch.setattr(argparsers, 'get_terminal_size', sub_terminal_size(70))
+    argv = shlex.split("")
+    monkeypatch.setattr(argparsers, "get_terminal_size", sub_terminal_size(70))
     output_parser = argparsers.get_output_parser()
     assert output_parser.parse_args(argv).cal_width == 10
 
-    argv = shlex.split('')
-    monkeypatch.setattr(argparsers, 'get_terminal_size',
-                        sub_terminal_size(100))
+    argv = shlex.split("")
+    monkeypatch.setattr(argparsers, "get_terminal_size", sub_terminal_size(100))
     output_parser = argparsers.get_output_parser()
     assert output_parser.parse_args(argv).cal_width == 13
 
@@ -60,7 +59,7 @@ def test_search_parser():
 def test_updates_parser():
     updates_parser = argparsers.get_updates_parser()
 
-    argv = shlex.split('2019-07-18 2019-08-01 2019-09-01')
+    argv = shlex.split("2019-07-18 2019-08-01 2019-09-01")
     parsed_updates = updates_parser.parse_args(argv)
     assert parsed_updates.since
     assert parsed_updates.start
@@ -70,7 +69,7 @@ def test_updates_parser():
 def test_conflicts_parser():
     updates_parser = argparsers.get_conflicts_parser()
 
-    argv = shlex.split('search 2019-08-01 2019-09-01')
+    argv = shlex.split("search 2019-08-01 2019-09-01")
     parsed_conflicts = updates_parser.parse_args(argv)
     assert parsed_conflicts.text
     assert parsed_conflicts.start
@@ -80,15 +79,16 @@ def test_conflicts_parser():
 def test_details_parser():
     details_parser = argparsers.get_details_parser()
 
-    argv = shlex.split('--details attendees --details url '
-                       '--details location --details end')
+    argv = shlex.split(
+        "--details attendees --details url " "--details location --details end"
+    )
     parsed_details = details_parser.parse_args(argv).details
-    assert parsed_details['attendees']
-    assert parsed_details['location']
-    assert parsed_details['url']
-    assert parsed_details['end']
+    assert parsed_details["attendees"]
+    assert parsed_details["location"]
+    assert parsed_details["url"]
+    assert parsed_details["end"]
 
-    argv = shlex.split('--details all')
+    argv = shlex.split("--details all")
     parsed_details = details_parser.parse_args(argv).details
     assert all(parsed_details[d] for d in argparsers.DETAILS)
 
@@ -100,4 +100,4 @@ def test_handle_unparsed():
     argv = shlex.split('delete --calendar=test "search text"')
     parsed, unparsed = parser.parse_known_args(argv)
     parsed = argparsers.handle_unparsed(unparsed, parsed)
-    assert parsed.calendar == ['test']
+    assert parsed.calendar == ["test"]

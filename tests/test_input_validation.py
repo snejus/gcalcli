@@ -1,8 +1,16 @@
 import pytest
 
-from gcalcli.validators import (PARSABLE_DATE, PARSABLE_DURATION, REMINDER,
-                                STR_ALLOW_EMPTY, STR_NOT_EMPTY, STR_TO_INT,
-                                VALID_COLORS, validate_input, ValidationError)
+from gcalcli.validators import (
+    PARSABLE_DATE,
+    PARSABLE_DURATION,
+    REMINDER,
+    STR_ALLOW_EMPTY,
+    STR_NOT_EMPTY,
+    STR_TO_INT,
+    VALID_COLORS,
+    validate_input,
+    ValidationError,
+)
 
 # Tests required:
 #
@@ -19,14 +27,12 @@ def test_any_string_not_blank_validator(monkeypatch):
     # Empty string raises ValidationError
     monkeypatch.setattr("builtins.input", lambda: "")
     with pytest.raises(ValidationError):
-        validate_input(STR_NOT_EMPTY) == ValidationError(
-            "Input here cannot be empty")
+        validate_input(STR_NOT_EMPTY) == ValidationError("Input here cannot be empty")
 
     # None raises ValidationError
     monkeypatch.setattr("builtins.input", lambda: None)
     with pytest.raises(ValidationError):
-        validate_input(STR_NOT_EMPTY) == ValidationError(
-            "Input here cannot be empty")
+        validate_input(STR_NOT_EMPTY) == ValidationError("Input here cannot be empty")
 
     # Valid string passes
     monkeypatch.setattr("builtins.input", lambda: "Valid Text")
@@ -54,9 +60,8 @@ def test_any_string_parsable_by_parsedatetime(monkeypatch):
     with pytest.raises(ValidationError) as ve:
         validate_input(PARSABLE_DURATION)
     assert ve.value.message == (
-            'Expected format: a duration (e.g. 1m, 1s, 1h3m)'
-            '(Ctrl-C to exit)\n'
-        )
+        "Expected format: a duration (e.g. 1m, 1s, 1h3m)" "(Ctrl-C to exit)\n"
+    )
 
     # duration string passes
     monkeypatch.setattr("builtins.input", lambda: "1m")
@@ -71,8 +76,7 @@ def test_string_can_be_cast_to_int(monkeypatch):
     # non int-castable string raises ValidationError
     monkeypatch.setattr("builtins.input", lambda: "X")
     with pytest.raises(ValidationError):
-        validate_input(STR_TO_INT) == ValidationError(
-            "Input here must be a number")
+        validate_input(STR_TO_INT) == ValidationError("Input here must be a number")
 
     # int string passes
     monkeypatch.setattr("builtins.input", lambda: "10")
@@ -121,10 +125,12 @@ def test_reminder(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda: "meaningless")
     with pytest.raises(ValidationError):
         validate_input(REMINDER) == ValidationError(
-            "Format: <number><w|d|h|m> <popup|email|sms>\n")
+            "Format: <number><w|d|h|m> <popup|email|sms>\n"
+        )
 
     # invalid reminder raises ValidationError
     monkeypatch.setattr("builtins.input", lambda: "")
     with pytest.raises(ValidationError):
         validate_input(REMINDER) == ValidationError(
-            "Format: <number><w|d|h|m> <popup|email|sms>\n")
+            "Format: <number><w|d|h|m> <popup|email|sms>\n"
+        )

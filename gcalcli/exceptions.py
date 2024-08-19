@@ -10,7 +10,7 @@ class ValidationError(Exception):
 
 class ReadonlyError(Exception):
     def __init__(self, fieldname, message):
-        message = 'Field {} is read-only. {}'.format(fieldname, message)
+        message = "Field {} is read-only. {}".format(fieldname, message)
         super(ReadonlyError, self).__init__(message)
 
 
@@ -24,6 +24,5 @@ class ReadonlyCheckError(ReadonlyError):
 
 def raise_one_cal_error(cals):
     raise GcalcliError(
-        'You must only specify a single calendar\n'
-        'Calendars: {}\n'.format(cals)
+        "You must only specify a single calendar\n" "Calendars: {}\n".format(cals)
     )
