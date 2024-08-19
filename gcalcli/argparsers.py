@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import copy as _copy
 import datetime
@@ -439,7 +441,7 @@ def get_argument_parser():
 
     add = sub.add_parser(
         "add",
-        parents=[details_parser, remind_parser],
+        parents=[remind_parser],
         help="add a detailed event to the calendar",
         description="Add an event to the calendar. Some or all metadata "
         "can be passed as options (see optional arguments).  If "
@@ -462,7 +464,7 @@ def get_argument_parser():
     add.add_argument(
         "--duration",
         default=None,
-        type=int,
+        type=str,
         help="Event duration in minutes or days if --allday is given.",
     )
     add.add_argument("--description", default=None, type=str, help="Event description")

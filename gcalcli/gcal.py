@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import json
 import operator
@@ -11,8 +13,8 @@ import time
 from collections import namedtuple
 from csv import DictReader, excel_tab
 from datetime import date, datetime, timedelta
-from itertools import chain
-from typing import List
+from itertools import chain, takewhile
+from typing import TYPE_CHECKING, List
 from unicodedata import east_asian_width
 
 import httplib2
@@ -32,17 +34,22 @@ from .conflicts import ShowConflicts
 from .details import ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS, _valid_title
 from .exceptions import GcalcliError
 from .printer import Printer
-from .utils import days_since_epoch, is_all_day
+from .utils import (
+    days_since_epoch,
+    get_time_from_str,
+    is_all_day,
+)
 from .validators import (
-    PARSABLE_DATE,
-    PARSABLE_DURATION,
-    REMINDER,
-    STR_ALLOW_EMPTY,
-    STR_NOT_EMPTY,
     STR_TO_INT,
-    VALID_COLORS,
+    get_color,
+    get_desc,
+    get_duration,
     get_input,
+    get_location,
     get_override_color_id,
+    get_reminder,
+    get_start_dt,
+    get_title,
 )
 
 try:
@@ -50,6 +57,9 @@ try:
 except Exception:
     import pickle
 
+if TYPE_CHECKING:
+    from googleapiclient._apis.calendar.v3 import CalendarList, CalendarResource, Event
+    from googleapiclient.http import HttpRequest
 
 EventTitle = namedtuple("EventTitle", ["title", "color"])
 
@@ -123,7 +133,7 @@ class GoogleCalendarInterface:
             return dt.replace(tzinfo=tzlocal())
         return dt.astimezone(tzlocal())
 
-    def _retry_with_backoff(self, method):
+    def _retry_with_backoff(self, method: "HttpRequest"):
         for n in range(self.max_retries):
             try:
                 return method.execute()
@@ -136,8 +146,10 @@ class GoogleCalendarInterface:
                     time.sleep((2**n) + random.random())
                 else:
                     raise
-
-        return None
+        else:
+            raise GcalcliError(
+                f"Failed to submit request after {self.max_retries} retries"
+            )
 
     def _google_auth(self):
         from argparse import Namespace
@@ -167,7 +179,7 @@ class GoogleCalendarInterface:
 
         return self.auth_http
 
-    def get_cal_service(self):
+    def get_cal_service(self) -> "CalendarResource":
         if not self.cal_service:
             self.cal_service = build(
                 serviceName="calendar", version="v3", http=self._google_auth()
@@ -175,7 +187,7 @@ class GoogleCalendarInterface:
 
         return self.cal_service
 
-    def get_events(self):
+    def get_events(self) -> "CalendarResource.EventsResource":
         return self.get_cal_service().events()
 
     def _get_cached(self) -> None:
@@ -201,7 +213,7 @@ class GoogleCalendarInterface:
                     self.all_cals = self.cache["all_cals"]
                 # XXX assuming data is valid, need some verification check here
                 return
-        cal_list = self._retry_with_backoff(
+        cal_list: CalendarList = self._retry_with_backoff(
             self.get_cal_service().calendarList().list()
         )
 
@@ -837,44 +849,40 @@ class GoogleCalendarInterface:
             sys.stdout.write("\n")
             sys.exit(1)
 
-    def _SetEventStartEnd(self, start, end, event):
-        event["s"] = parse(start)
-        event["e"] - parse(end)
-
-        if self.options.get("allday"):
-            event["start"] = {"date": start, "dateTime": None, "timeZone": None}
-            event["end"] = {"date": end, "dateTime": None, "timeZone": None}
+    @staticmethod
+    def _SetEventStartEnd(
+        start: datetime, event: Event, allday: bool, timezone: str, end: datetime
+    ) -> None:
+        print(f"{start=} {end=} {allday=} {timezone=}")
+        if allday:
+            event["start"] = {"date": start.date().isoformat()}
+            event["end"] = {"date": end.date().isoformat()}
         else:
-            event["start"] = {
-                "date": None,
-                "dateTime": start,
-                "timeZone": event["gcalcli_cal"]["timeZone"],
-            }
-            event["end"] = {
-                "date": None,
-                "dateTime": end,
-                "timeZone": event["gcalcli_cal"]["timeZone"],
-            }
-        return event
+            event["start"] = {"dateTime": start.isoformat(), "timeZone": timezone}
+            event["end"] = {"dateTime": end.isoformat(), "timeZone": timezone}
 
     def _edit_event(self, event) -> None:
         while True:
             self.printer.msg(
-                "Edit?\n[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen "
-                + "len[g]th [r]eminder [c]olor [d]escr: ",
-                "magenta",
+                "Edit?\n"
+                "[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen "
+                "len[g]th [r]eminder [c]olor [d]escr: magenta"
             )
             val = input()
 
-            if not val or val.lower() == "n":
+            if not val or (val := val.lower()) == "n":
                 return
 
-            if val.lower() == "c":
-                if val := get_input(self.printer, "Color: ", VALID_COLORS):
-                    self.options["override_color"] = True
-                    event["colorId"] = get_override_color_id(val)
+            allday = self.options["allday"]
+            dt_field = "date" if allday else "dateTime"
 
-            elif val.lower() == "s":
+            duration = timedelta()
+            start_dt = datetime.now(tz=tzlocal())
+            if val == "c" and (color := get_color(self.printer)):
+                self.options["override_color"] = True
+                event["colorId"] = get_override_color_id(color)
+
+            elif val == "s":
                 keys = [
                     "summary",
                     "location",
@@ -895,80 +903,51 @@ class GoogleCalendarInterface:
                 self.printer.msg("Saved!\n", "red")
                 return
 
-            elif not val or val.lower() == "q":
+            elif val == "q":
                 sys.stdout.write("\n")
                 sys.exit(0)
 
-            elif val.lower() == "t":
-                val = get_input(self.printer, "Title: ", STR_NOT_EMPTY)
-                if val.strip():
-                    event["summary"] = val.strip()
+            elif val == "t" and (summary := get_title(self.printer)):
+                event["summary"] = summary
 
-            elif val.lower() == "l":
-                val = get_input(self.printer, "Location: ", STR_ALLOW_EMPTY)
-                if val.strip():
-                    event["location"] = val.strip()
+            elif val == "l" and (location := get_location(self.printer)):
+                event["location"] = location
 
-            elif val.lower() == "w":
-                if val := get_input(self.printer, "When: ", PARSABLE_DATE).strip():
-                    td = event["e"] - event["s"]
-                    length = (td.days * 1440) + (td.seconds / 60)
-                    all_day = self.options.get("allday")
-                    try:
-                        new_start, new_end = utils.get_times_from_duration(
-                            val, length, all_day
-                        )
-                    except ValueError as exc:
-                        self.printer.err_msg(str(exc))
-                        sys.exit(1)
-                    event = self._SetEventStartEnd(new_start, new_end, event)
-
-            elif val.lower() == "g":
-                val = get_input(
-                    self.printer, "Length (mins or human readable): ", PARSABLE_DURATION
+            elif val == "w" and (start := get_start_dt(self.printer)):
+                start_dt = get_time_from_str(start)
+            elif val == "g":
+                duration_str = get_duration(self.printer)
+                duration_suffix = "d" if allday else "m"
+                duration = utils.get_timedelta_from_str(
+                    f"{duration_str} {duration_suffix}"
                 )
-                if val:
-                    all_day = self.options.get("allday")
-                try:
-                    new_start, new_end = utils.get_times_from_duration(
-                        event["start"]["dateTime"], val, all_day
-                    )
-                    event = self._SetEventStartEnd(new_start, new_end, event)
-                except ValueError as exc:
-                    self.printer.err_msg(str(exc))
 
-            elif val.lower() == "r":
-                rem = []
-                while True:
-                    r = get_input(
-                        self.printer,
-                        "Enter a valid reminder or '.' toend: ",
-                        REMINDER,
-                    )
-                    if r == ".":
-                        break
-                    rem.append(r)
-
-                if rem or not self.options["default_reminders"]:
-                    event["reminders"] = {"useDefault": False, "overrides": []}
-                    for r in rem:
-                        n, m = utils.parse_reminder(r)
-                        event["reminders"]["overrides"].append({
-                            "minutes": n,
-                            "method": m,
-                        })
-                else:
+            elif val == "r":
+                if self.options["default_reminders"]:
                     event["reminders"] = {"useDefault": True, "overrides": []}
+                else:
+                    get_reminders = (get_reminder(self.printer) for _ in range(10))
+                    until_stop = takewhile(lambda r: r != ".", get_reminders)
+                    event["reminders"]["overrides"] = [
+                        {"minutes": n, "method": m}
+                        for n, m in map(utils.parse_reminder, until_stop)
+                    ]
 
-            elif val.lower() == "d":
-                val = get_input(self.printer, "Description: ", STR_ALLOW_EMPTY)
-                if val.strip():
-                    event["description"] = val.strip()
+            elif val == "d" and (desc := get_desc(self.printer)):
+                event["description"] = desc
 
             else:
                 self.printer.err_msg("Error: invalid input\n")
                 sys.stdout.write("\n")
                 sys.exit(1)
+
+            end_dt = start_dt + duration
+            event["start"][dt_field] = start_dt.isoformat()
+            event["end"][dt_field] = end_dt.isoformat()
+
+            if dt_field == "dateTime":
+                timezone = event["gcalcli_cal"]["timeZone"]
+                event["start"]["timeZone"] = event["end"]["timeZone"] = timezone
 
             self._PrintEvent(event, event["s"].strftime("\n%Y-%m-%d"))
 
@@ -1262,7 +1241,9 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders, color):
+    def AddEvent(
+        self, title, where, start: datetime, end: datetime, descr, who, reminders, color
+    ):
         if len(self.cals) != 1:
             # Calendar not specified. Prompt the user to select it
             writers = (self.ACCESS_OWNER, self.ACCESS_WRITER)
@@ -1284,15 +1265,10 @@ class GoogleCalendarInterface:
                     "The entered number doesn't appear on the list above\n"
                 ) from e
 
-        event = {"summary": title}
-        if self.options["allday"]:
-            event["start"] = {"date": start}
-            event["end"] = {"date": end}
-
-        else:
-            event["start"] = {"dateTime": start, "timeZone": self.cals[0]["timeZone"]}
-            event["end"] = {"dateTime": end, "timeZone": self.cals[0]["timeZone"]}
-
+        event: Event = {"summary": title}
+        self._SetEventStartEnd(
+            start, event, self.options["allday"], self.cals[0]["timeZone"], end
+        )
         if where:
             event["location"] = where
         if descr:
@@ -1306,13 +1282,7 @@ class GoogleCalendarInterface:
         event = self._add_reminders(event, reminders)
         events = self.get_events()
         request = events.insert(calendarId=self.cals[0]["id"], body=event)
-        new_event = self._retry_with_backoff(request)
-
-        if self.details.get("url"):
-            hlink = new_event["htmlLink"]
-            self.printer.msg(f"New event added: {hlink}\n", "green")
-
-        return new_event
+        return self._retry_with_backoff(request)
 
     def ModifyEvents(self, work, search_text, start=None, end=None, expert=False):
         if not search_text:

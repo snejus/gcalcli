@@ -19,6 +19,7 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 # ######################################################################### #
+import json
 import os
 import signal
 import sys
@@ -30,12 +31,12 @@ from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
 from .validators import (
-    PARSABLE_DATE,
-    PARSABLE_DURATION,
-    REMINDER,
-    STR_ALLOW_EMPTY,
-    STR_NOT_EMPTY,
-    get_input,
+    get_desc,
+    get_duration,
+    get_location,
+    get_reminder,
+    get_start_dt,
+    get_title,
 )
 
 CalName = namedtuple("CalName", ["name", "color"])
@@ -63,24 +64,18 @@ def parse_cal_names(cal_names):
 
 def run_add_prompt(parsed_args, printer):
     if parsed_args.title is None:
-        parsed_args.title = get_input(printer, "Title: ", STR_NOT_EMPTY)
+        parsed_args.title = get_title(printer)
     if parsed_args.where is None:
-        parsed_args.where = get_input(printer, "Location: ", STR_ALLOW_EMPTY)
+        parsed_args.where = get_location(printer)
     if parsed_args.when is None:
-        parsed_args.when = get_input(printer, "When: ", PARSABLE_DATE)
+        parsed_args.when = get_start_dt(printer)
     if parsed_args.duration is None:
-        if parsed_args.allday:
-            prompt = "Duration (days): "
-        else:
-            prompt = "Duration (human readable): "
-        parsed_args.duration = get_input(printer, prompt, PARSABLE_DURATION)
+        parsed_args.duration = get_duration(printer, parsed_args.allday)
     if parsed_args.description is None:
-        parsed_args.description = get_input(printer, "Description: ", STR_ALLOW_EMPTY)
+        parsed_args.description = get_desc(printer)
     if not parsed_args.reminders:
         while True:
-            r = get_input(
-                printer, "Enter a valid reminder or " '"." to end: ', REMINDER
-            )
+            r = get_reminder(printer)
 
             if r == ".":
                 break
@@ -88,7 +83,7 @@ def run_add_prompt(parsed_args, printer):
             parsed_args.reminders.append(f"{n!s} {m}")
 
 
-def main():
+def main() -> None:
     parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
@@ -185,25 +180,30 @@ def main():
                 run_add_prompt(parsed_args, printer)
 
             # calculate "when" time:
+            if (duration_str := parsed_args.duration).isnumeric():
+                duration_str += " days" if parsed_args.allday else " minutes"
             try:
-                estart, eend = utils.get_times_from_duration(
-                    parsed_args.when, parsed_args.duration, parsed_args.allday
-                )
+                start = utils.get_time_from_str(parsed_args.when)
+                duration = utils.get_timedelta_from_str(duration_str)
             except ValueError as exc:
                 printer.err_msg(str(exc))
                 # Since we actually need a valid start and end time in order to
                 # add the event, we cannot proceed.
                 raise
 
-            gcal.AddEvent(
-                parsed_args.title,
-                parsed_args.where,
-                estart,
-                eend,
-                parsed_args.description,
-                parsed_args.who,
-                parsed_args.reminders,
-                parsed_args.event_color,
+            print(
+                json.dumps(
+                    gcal.AddEvent(
+                        parsed_args.title,
+                        parsed_args.where,
+                        start,
+                        start + duration,
+                        parsed_args.description,
+                        parsed_args.who,
+                        parsed_args.reminders,
+                        parsed_args.event_color,
+                    )
+                )
             )
 
         elif parsed_args.command == "search":

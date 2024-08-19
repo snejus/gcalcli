@@ -1,6 +1,8 @@
 import re
+from typing import Callable
 
 from .exceptions import ValidationError
+from .printer import Printer
 from .utils import REMINDER_REGEX, get_time_from_str, get_timedelta_from_str
 
 # TODO: in the future, pull these from the API
@@ -24,7 +26,7 @@ def get_override_color_id(color):
     return str(VALID_OVERRIDE_COLORS.index(color) + 1)
 
 
-def get_input(printer, prompt, validator_func):
+def get_input(printer, prompt, validator_func) -> str:
     printer.msg(prompt, "magenta")
     while True:
         try:
@@ -45,10 +47,9 @@ def color_validator(input_str):
         return input_str
     except AssertionError as e:
         raise ValidationError(
-
-                ("Expected colors are: " + ", ".join(VALID_OVERRIDE_COLORS))
-                + ". (Ctrl-C to exit)\n"
-
+            "Expected colors are: "
+            + ", ".join(VALID_OVERRIDE_COLORS)
+            + ". (Ctrl-C to exit)\n"
         ) from e
 
 
@@ -122,10 +123,39 @@ def reminder_validator(input_str):
     )
 
 
-def validate_input(validator_func):
+def validate_input(validator_func: Callable[[str], str]) -> str:
     """Wrapper around Validator funcs."""
     inp_str = input()
     return validator_func(inp_str)
+
+
+def get_title(printer: Printer) -> str:
+    return get_input(printer, "Title: ", STR_NOT_EMPTY).strip()
+
+
+def get_reminder(printer: Printer) -> str:
+    return get_input(printer, "Enter a valid reminder or '.' to end: ", REMINDER)
+
+
+def get_duration(printer: Printer, allday: bool = False) -> str:
+    prompt = "Duration (days): " if allday else "Duration (human readable): "
+    return get_input(printer, prompt, PARSABLE_DURATION)
+
+
+def get_start_dt(printer: Printer) -> str:
+    return get_input(printer, "When: ", PARSABLE_DATE).strip()
+
+
+def get_location(printer: Printer) -> str:
+    return get_input(printer, "Location: ", STR_ALLOW_EMPTY).strip()
+
+
+def get_desc(printer: Printer) -> str:
+    return get_input(printer, "Description: ", STR_ALLOW_EMPTY).strip()
+
+
+def get_color(printer: Printer) -> str:
+    return get_input(printer, "Color: ", VALID_COLORS)
 
 
 STR_NOT_EMPTY = non_blank_str_validator

@@ -19,6 +19,7 @@ httplib2 = "*"
 oauth2client = "*"
 parsedatetime = "*"
 python-dateutil = "*"
+durations-nlp = "^1.0.1"
 
 [tool.poetry.scripts]
 gcalcli = "gcalcli.cli:main"
@@ -33,3 +34,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
+
+## Exclude a variety of commonly ignored directories.
+[tool.ruff]
+unsafe-fixes = true
+
+[tool.ruff.format]
+preview = true
