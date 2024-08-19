@@ -7,6 +7,7 @@ import time
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzlocal
 from parsedatetime.parsedatetime import Calendar
+import contextlib
 
 locale.setlocale(locale.LC_ALL, "")
 fuzzy_date_parse = Calendar().parse
@@ -36,7 +37,7 @@ def parse_reminder(rem):
     elif t == "d":
         n = n * 24 * 60
     elif t == "h":
-        n = n * 60
+        n *= 60
 
     if not m:
         m = "popup"
@@ -57,13 +58,15 @@ def get_times_from_duration(when, duration=0, allday=False):
     try:
         start = get_time_from_str(when)
     except Exception:
-        raise ValueError("Date and time is invalid: %s\n" % (when))
+        msg = f"Date and time is invalid: {when}\n"
+        raise ValueError(msg)
 
     if allday:
         try:
             stop = start + timedelta(days=float(duration))
         except Exception:
-            raise ValueError("Duration time (days) is invalid: %s\n" % (duration))
+            msg = f"Duration time (days) is invalid: {duration}\n"
+            raise ValueError(msg)
 
         start = start.date().isoformat()
         stop = stop.date().isoformat()
@@ -72,7 +75,8 @@ def get_times_from_duration(when, duration=0, allday=False):
         try:
             stop = start + get_timedelta_from_str(duration)
         except Exception:
-            raise ValueError("Duration time is invalid: %s\n" % (duration))
+            msg = f"Duration time is invalid: {duration}\n"
+            raise ValueError(msg)
 
         start = start.isoformat()
         stop = stop.isoformat()
@@ -82,7 +86,7 @@ def get_times_from_duration(when, duration=0, allday=False):
 
 def get_time_from_str(when):
     """Convert a string to a time: first uses the dateutil parser, falls back
-    on fuzzy matching with parsedatetime
+    on fuzzy matching with parsedatetime.
     """
     zero_oclock_today = datetime.now(tzlocal()).replace(
         hour=0, minute=0, second=0, microsecond=0
@@ -93,26 +97,24 @@ def get_time_from_str(when):
     except ValueError:
         struct, result = fuzzy_date_parse(when)
         if not result:
-            raise ValueError("Date and time is invalid: %s" % (when))
+            msg = f"Date and time is invalid: {when}"
+            raise ValueError(msg)
         event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
     return event_time
 
 
 def get_timedelta_from_str(delta):
-    """
-    Parse a time string a timedelta object.
+    """Parse a time string a timedelta object.
     Formats:
       - number -> duration in minutes
       - "1:10" -> hour and minutes
       - "1d 1h 1m" -> days, hours, minutes
-    Based on https://stackoverflow.com/a/51916936/12880
+    Based on https://stackoverflow.com/a/51916936/12880.
     """
     parsed_delta = None
-    try:
+    with contextlib.suppress(ValueError):
         parsed_delta = timedelta(minutes=float(delta))
-    except ValueError:
-        pass
     if parsed_delta is None:
         parts = DURATION_REGEX.match(delta)
         if parts is not None:
@@ -130,7 +132,8 @@ def get_timedelta_from_str(delta):
         if result:
             parsed_delta = dt - datetime.min
     if parsed_delta is None:
-        raise ValueError("Duration is invalid: %s" % (delta))
+        msg = f"Duration is invalid: {delta}"
+        raise ValueError(msg)
     return parsed_delta
 
 

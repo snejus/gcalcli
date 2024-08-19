@@ -44,6 +44,7 @@ def patch(row, cal, interface):
             body=mod_event,
         )
     )
+    return None
 
 
 def insert(row, cal, interface):

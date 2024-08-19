@@ -36,8 +36,10 @@ class DeprecatedStore(argparse._StoreAction):
 
 
 class DeprecatedStoreTrue(argparse._StoreConstAction):
-    def __init__(self, option_strings, dest, default=False, required=False, help=None):
-        super(DeprecatedStoreTrue, self).__init__(
+    def __init__(
+        self, option_strings, dest, default=False, required=False, help=None
+    ) -> None:
+        super().__init__(
             option_strings=option_strings,
             dest=dest,
             const=True,
@@ -105,12 +107,10 @@ def parser_allow_deprecated(getter_func=None, name=None):
 
         return wrapped
 
-    else:
+    def partial_parser_allow_deprecated(getter_func):
+        return parser_allow_deprecated(getter_func, name=name)
 
-        def partial_parser_allow_deprecated(getter_func):
-            return parser_allow_deprecated(getter_func, name=name)
-
-        return partial_parser_allow_deprecated
+    return partial_parser_allow_deprecated
 
 
 ALL_DEPRECATED_OPTS = {}

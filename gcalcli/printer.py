@@ -1,27 +1,25 @@
 import argparse
 import sys
 
-COLOR_NAMES = set(
-    (
-        "default",
-        "black",
-        "red",
-        "green",
-        "yellow",
-        "blue",
-        "magenta",
-        "cyan",
-        "white",
-        "brightblack",
-        "brightred",
-        "brightgreen",
-        "brightyellow",
-        "brightblue",
-        "brightmagenta",
-        "brightcyan",
-        "brightwhite",
-    )
-)
+COLOR_NAMES = {
+    "default",
+    "black",
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white",
+    "brightblack",
+    "brightred",
+    "brightgreen",
+    "brightyellow",
+    "brightblue",
+    "brightmagenta",
+    "brightcyan",
+    "brightwhite",
+}
 ART_CHARS = {
     "fancy": {
         "hrz": "\033(0\x71\033(B",
@@ -67,14 +65,15 @@ ART_CHARS = {
 
 def valid_color_name(value):
     if value not in COLOR_NAMES:
-        raise argparse.ArgumentTypeError("%s is not a valid color" % value)
+        msg = f"{value} is not a valid color"
+        raise argparse.ArgumentTypeError(msg)
     return value
 
 
-class Printer(object):
-    """Provide methods for terminal output with color (or not)"""
+class Printer:
+    """Provide methods for terminal output with color (or not)."""
 
-    def __init__(self, conky=False, use_color=True, art_style="ascii"):
+    def __init__(self, conky=False, use_color=True, art_style="ascii") -> None:
         self.use_color = use_color
         self.conky = conky
         self.colors = {
@@ -117,5 +116,5 @@ class Printer(object):
         self.msg(msg, "yellow", file=sys.stderr)
 
     def art_msg(self, arttag, colorname, file=sys.stdout):
-        """Wrapper for easy emission of the calendar borders"""
+        """Wrapper for easy emission of the calendar borders."""
         self.msg(self.art[arttag], colorname, file=file)

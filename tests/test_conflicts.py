@@ -22,7 +22,7 @@ minimal_event_nonoverlapping = {
 
 
 def test_finds_no_conflicts_for_one_event():
-    """Basic test that only ensures the function can be run without error"""
+    """Basic test that only ensures the function can be run without error."""
     conflicts = []
     show_conflicts = ShowConflicts(conflicts.append)
     show_conflicts.show_conflicts(minimal_event)

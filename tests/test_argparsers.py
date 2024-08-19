@@ -7,7 +7,7 @@ from gcalcli import argparsers
 
 
 def test_get_argparser():
-    """Just asserts no errors have been introduced"""
+    """Just asserts no errors have been introduced."""
     argparser = argparsers.get_argument_parser()
     assert argparser
 
@@ -80,7 +80,7 @@ def test_details_parser():
     details_parser = argparsers.get_details_parser()
 
     argv = shlex.split(
-        "--details attendees --details url " "--details location --details end"
+        "--details attendees --details url --details location --details end"
     )
     parsed_details = details_parser.parse_args(argv).details
     assert parsed_details["attendees"]

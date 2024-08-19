@@ -54,10 +54,11 @@ def parse_cal_names(cal_names):
             cal_color = valid_color_name(parts[1])
 
         if len(parts) > 2:
-            raise ValueError('Cannot parse calendar name: "%s"' % name)
+            msg = f'Cannot parse calendar name: "{name}"'
+            raise ValueError(msg)
 
         cal_colors[cal_name] = cal_color
-    return [CalName(name=k, color=cal_colors[k]) for k in cal_colors.keys()]
+    return [CalName(name=k, color=cal_colors[k]) for k in cal_colors]
 
 
 def run_add_prompt(parsed_args, printer):
@@ -96,9 +97,7 @@ def main():
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmp_argv = [
-                "@%s" % gcalclirc,
-            ] + argv
+            tmp_argv = [f"@{gcalclirc}", *argv]
         else:
             tmp_argv = argv
 
@@ -111,11 +110,9 @@ def main():
     if parsed_args.config_folder:
         if not os.path.exists(os.path.expanduser(parsed_args.config_folder)):
             os.makedirs(os.path.expanduser(parsed_args.config_folder))
-        if os.path.exists(
-            os.path.expanduser("%s/gcalclirc" % parsed_args.config_folder)
-        ):
+        if os.path.exists(os.path.expanduser(f"{parsed_args.config_folder}/gcalclirc")):
             rc_path = [
-                "@%s/gcalclirc" % parsed_args.config_folder,
+                f"@{parsed_args.config_folder}/gcalclirc",
             ]
             if not parsed_args.includeRc:
                 tmp_argv = rc_path + argv

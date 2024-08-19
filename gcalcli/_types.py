@@ -3,10 +3,10 @@
 
 # must have underscore so as not to shadow stdlib types.py
 
-from datetime import datetime
 from typing import Any, Dict, List, TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from googleapiclient._apis.calendar.v3.schemas import (
         CalendarListEntry,
         Event as GoogleEvent,
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     # setting total=False
     class Cache(TypedDict, total=False):
         all_cals: List[CalendarListEntry]
+
 else:
     CalendarListEntry = Dict[str, Any]
     Event = Dict[str, Any]

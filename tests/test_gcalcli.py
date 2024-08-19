@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from datetime import datetime
 from json import load
 import os
@@ -26,7 +24,7 @@ TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + "/data"
 #       We just try the commands and make sure no errors occur.
 def test_list(capsys, PatchedGCalI):
     gcal = PatchedGCalI(**vars(get_color_parser().parse_args([])))
-    with open(TEST_DATA_DIR + "/cal_list.json") as cl:
+    with open(TEST_DATA_DIR + "/cal_list.json", encoding="utf-8") as cl:
         cal_count = len(load(cl)["items"])
 
     # test data has 6 cals
@@ -70,9 +68,11 @@ def test_updates(PatchedGCalI):
 def test_conflicts(PatchedGCalI):
     assert PatchedGCalI().ConflictsQuery() == 0
 
-    opts = get_conflicts_parser().parse_args(
-        ["search text", "2019-07-19", "2019-08-01"]
-    )
+    opts = get_conflicts_parser().parse_args([
+        "search text",
+        "2019-07-19",
+        "2019-08-01",
+    ])
     assert (
         PatchedGCalI().ConflictsQuery("search text", start=opts.start, end=opts.end)
         == 0
@@ -227,7 +227,7 @@ def test_import(PatchedGCalI):
     cal_names = parse_cal_names(["jcrowgey@uw.edu"])
     gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
     vcal_path = TEST_DATA_DIR + "/vv.txt"
-    assert gcal.ImportICS(icsFile=open(vcal_path))
+    assert gcal.ImportICS(icsFile=open(vcal_path, encoding="utf-8"))
 
 
 def test_parse_reminder():

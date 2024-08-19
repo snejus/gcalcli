@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
-from typing import List  # python3.9: can just use `list`
+from typing import List, NoReturn  # python3.9: can just use `list`
 
 from dateutil.parser import isoparse, parse
 
@@ -16,16 +16,16 @@ TODAY = datetime.now().date()
 ACTION_DEFAULT = "patch"
 
 URL_PROPS = OrderedDict([("html_link", "htmlLink"), ("hangout_link", "hangoutLink")])
-ENTRY_POINT_PROPS = OrderedDict(
-    [("conference_entry_point_type", "entryPointType"), ("conference_uri", "uri")]
-)
+ENTRY_POINT_PROPS = OrderedDict([
+    ("conference_entry_point_type", "entryPointType"),
+    ("conference_uri", "uri"),
+])
 
 
 def _valid_title(event):
     if "summary" in event and event["summary"].strip():
         return event["summary"]
-    else:
-        return "(No title)"
+    return "(No title)"
 
 
 class Handler:
@@ -35,12 +35,12 @@ class Handler:
     fieldnames: List[str] = []
 
     @classmethod
-    def get(cls, event):
+    def get(cls, event) -> NoReturn:
         """Return simple string representation for columnar output."""
         raise NotImplementedError
 
     @classmethod
-    def patch(cls, cal, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value) -> NoReturn:
         """Patch event from value."""
         raise NotImplementedError
 
@@ -65,7 +65,7 @@ class SimpleSingleFieldHandler(SingleFieldHandler):
         return event.get(cls.fieldnames[0], "")
 
     @classmethod
-    def _patch(cls, event, value):
+    def _patch(cls, event, value) -> None:
         event[cls.fieldnames[0]] = value
 
 
@@ -78,10 +78,7 @@ class Time(Handler):
     def _datetime_to_fields(cls, instant, all_day):
         instant_date = instant.strftime(FMT_DATE)
 
-        if all_day:
-            instant_time = ""
-        else:
-            instant_time = instant.strftime(FMT_TIME)
+        instant_time = "" if all_day else instant.strftime(FMT_TIME)
 
         return [instant_date, instant_time]
 
@@ -95,7 +92,7 @@ class Time(Handler):
         return start_fields + end_fields
 
     @classmethod
-    def patch(cls, cal, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value) -> None:
         instant_name, _, unit = fieldname.partition("_")
 
         assert instant_name in {"start", "end"}
@@ -134,7 +131,7 @@ class Url(Handler):
         return [event.get(prop, "") for prop in URL_PROPS.values()]
 
     @classmethod
-    def patch(cls, cal, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value) -> None:
         if fieldname == "html_link":
             raise ReadonlyError(
                 fieldname,
@@ -174,7 +171,7 @@ class Conference(Handler):
         return [entry_point.get(prop, "") for prop in ENTRY_POINT_PROPS.values()]
 
     @classmethod
-    def patch(cls, cal, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value) -> None:
         if not value:
             return
 
@@ -199,7 +196,7 @@ class Title(SingleFieldHandler):
         return _valid_title(event)
 
     @classmethod
-    def _patch(cls, event, value):
+    def _patch(cls, event, value) -> None:
         event["summary"] = value
 
 
@@ -225,7 +222,7 @@ class Calendar(SingleFieldHandler):
         return event["gcalcli_cal"]["summary"]
 
     @classmethod
-    def patch(cls, cal, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value) -> None:
         curr_value = cal["summary"]
 
         if curr_value != value:
@@ -258,28 +255,24 @@ class Action(SimpleSingleFieldHandler):
         return ACTION_DEFAULT
 
 
-HANDLERS = OrderedDict(
-    [
-        ("id", ID),
-        ("time", Time),
-        ("url", Url),
-        ("conference", Conference),
-        ("title", Title),
-        ("location", Location),
-        ("description", Description),
-        ("calendar", Calendar),
-        ("email", Email),
-        ("action", Action),
-    ]
-)
+HANDLERS = OrderedDict([
+    ("id", ID),
+    ("time", Time),
+    ("url", Url),
+    ("conference", Conference),
+    ("title", Title),
+    ("location", Location),
+    ("description", Description),
+    ("calendar", Calendar),
+    ("email", Email),
+    ("action", Action),
+])
 HANDLERS_READONLY = {Url, Calendar}
 
 FIELD_HANDLERS = dict(
     chain.from_iterable(
-        (
-            ((fieldname, handler) for fieldname in handler.fieldnames)
-            for handler in HANDLERS.values()
-        )
+        ((fieldname, handler) for fieldname in handler.fieldnames)
+        for handler in HANDLERS.values()
     )
 )
 

@@ -60,7 +60,7 @@ def test_any_string_parsable_by_parsedatetime(monkeypatch):
     with pytest.raises(ValidationError) as ve:
         validate_input(PARSABLE_DURATION)
     assert ve.value.message == (
-        "Expected format: a duration (e.g. 1m, 1s, 1h3m)" "(Ctrl-C to exit)\n"
+        "Expected format: a duration (e.g. 1m, 1s, 1h3m)(Ctrl-C to exit)\n"
     )
 
     # duration string passes

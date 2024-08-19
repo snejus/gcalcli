@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import argparse
 import copy as _copy
 import datetime
@@ -91,7 +89,7 @@ class DetailsAction(argparse._AppendAction):
         details = _copy.copy(getattr(namespace, self.dest, {}))
 
         if value == "all":
-            details.update({d: True for d in DETAILS})
+            details.update(dict.fromkeys(DETAILS, True))
         else:
             details[value] = True
 
@@ -107,9 +105,9 @@ def validwidth(value):
 
 def validreminder(value):
     if not utils.parse_reminder(value):
-        raise argparse.ArgumentTypeError("Not a valid reminder string: %s" % value)
-    else:
-        return value
+        msg = f"Not a valid reminder string: {value}"
+        raise argparse.ArgumentTypeError(msg)
+    return value
 
 
 def get_details_parser():
@@ -118,7 +116,7 @@ def get_details_parser():
         "--details",
         default={},
         action=DetailsAction,
-        choices=DETAILS + ["all"],
+        choices=[*DETAILS, "all"],
         help="Which parts to display, can be: " + ", ".join(DETAILS),
     )
     return details_parser
@@ -140,7 +138,9 @@ def get_auto_width():
     return day_width if day_width > 9 else 10
 
 
-def get_output_parser(parents=[]):
+def get_output_parser(parents=None):
+    if parents is None:
+        parents = []
     output_parser = argparse.ArgumentParser(add_help=False, parents=parents)
     output_parser.add_argument(
         "--tsv",
@@ -320,7 +320,7 @@ def get_argument_parser():
     parser.add_argument(
         "--version",
         action="version",
-        version="%%(prog)s %s (%s)" % (gcalcli.__version__, gcalcli.__author__),
+        version=f"%(prog)s {gcalcli.__version__} ({gcalcli.__author__})",
     )
 
     # Program level options
@@ -376,7 +376,7 @@ def get_argument_parser():
         "delete",
         parents=[output_parser, search_parser],
         help="delete events from the calendar",
-        description="Case insensitive search for items to delete " "interactively.",
+        description="Case insensitive search for items to delete interactively.",
     )
     delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
 

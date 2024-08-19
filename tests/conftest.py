@@ -81,12 +81,12 @@ def PatchedGCalIForEvents(monkeypatch):
         http = HttpMock(TEST_DATA_DIR + "/cal_list.json", {"status": "200"})
         request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
-        self.all_cals = [cal for cal in cal_list["items"]]
+        self.all_cals = list(cal_list["items"])
         if not self.cal_service:
             self.cal_service = build(serviceName="calendar", version="v3", http=http)
         return self.cal_service
 
-    def mocked_msg(self, msg, colorname="default", file=sys.stdout):
+    def mocked_msg(self, msg, colorname="default", file=sys.stdout) -> None:
         # ignores file and always writes to stdout
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors["default"]
@@ -121,12 +121,12 @@ def PatchedGCalI(monkeypatch):
         http = HttpMock(TEST_DATA_DIR + "/cal_list.json", {"status": "200"})
         request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
-        self.all_cals = [cal for cal in cal_list["items"]]
+        self.all_cals = list(cal_list["items"])
         if not self.cal_service:
             self.cal_service = build(serviceName="calendar", version="v3", http=http)
         return self.cal_service
 
-    def mocked_msg(self, msg, colorname="default", file=sys.stdout):
+    def mocked_msg(self, msg, colorname="default", file=sys.stdout) -> None:
         # ignores file and always writes to stdout
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors["default"]

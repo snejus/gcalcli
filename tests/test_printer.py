@@ -18,7 +18,7 @@ def test_valid_color_name():
 
 
 def test_all_colors():
-    """Makes sure the COLOR_NAMES is in sync with the colors in the printer"""
+    """Makes sure the COLOR_NAMES is in sync with the colors in the printer."""
     cp = Printer()
     for color_name in COLOR_NAMES:
         out = StringIO()
