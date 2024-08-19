@@ -58,7 +58,12 @@ except Exception:
     import pickle
 
 if TYPE_CHECKING:
-    from googleapiclient._apis.calendar.v3 import CalendarList, CalendarResource, Event
+    from googleapiclient._apis.calendar.v3 import (
+        CalendarList,
+        CalendarResource,
+        Event,
+        EventReminder,
+    )
     from googleapiclient.http import HttpRequest
 
 EventTitle = namedtuple("EventTitle", ["title", "color"])
@@ -293,13 +298,13 @@ class GoogleCalendarInterface:
             titlestr,
         ])
 
-    def _add_reminders(self, event, reminders=None):
-        if reminders or not self.options["default_reminders"]:
-            event["reminders"] = {"useDefault": False, "overrides": []}
-            for r in reminders:
-                n, m = utils.parse_reminder(r)
-                event["reminders"]["overrides"].append({"minutes": n, "method": m})
-        return event
+    def _get_reminders(self, reminders: list["EventReminder"]) -> dict | None:
+        if self.options["default_reminders"]:
+            return {"useDefault": True, "overrides": []}
+        elif reminders:
+            return {"useDefault": False, "overrides": reminders}
+
+        return None
 
     def _get_week_events(self, start_dt, end_dt, event_list):
         week_events = [[] for _ in range(7)]
@@ -924,14 +929,12 @@ class GoogleCalendarInterface:
 
             elif val == "r":
                 if self.options["default_reminders"]:
-                    event["reminders"] = {"useDefault": True, "overrides": []}
+                    reminders = {"useDefault": True, "overrides": []}
                 else:
                     get_reminders = (get_reminder(self.printer) for _ in range(10))
                     until_stop = takewhile(lambda r: r != ".", get_reminders)
-                    event["reminders"]["overrides"] = [
-                        {"minutes": n, "method": m}
-                        for n, m in map(utils.parse_reminder, until_stop)
-                    ]
+                    reminders = {"useDefault": False, "overrides": list(until_stop)}
+                event["reminders"] = reminders
 
             elif val == "d" and (desc := get_desc(self.printer)):
                 event["description"] = desc
@@ -1209,29 +1212,25 @@ class GoogleCalendarInterface:
             event_list = self._search_for_events(start, end, None)
             self._GraphEvents(cmd, start, count, event_list)
 
-    def QuickAddEvent(self, event_text, reminders=None):
+    def QuickAddEvent(self, event_text: str, reminders: list[EventReminder]) -> "Event":
         """Wrapper around Google Calendar API's quickAdd."""
-        if not event_text:
-            raise GcalcliError("event_text is required for a quickAdd")
-
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
             # and use it elsewhere
             raise GcalcliError("You must only specify a single calendar\n")
 
-        new_event = self._retry_with_backoff(
-            self.get_events().quickAdd(calendarId=self.cals[0]["id"], text=event_text)
+        calendar_id = self.cals[0]["id"]
+
+        event = self._retry_with_backoff(
+            self.get_events().quickAdd(
+                calendarId=calendar_id, text=event_text, sendUpdates="all"
+            )
         )
 
-        if reminders or not self.options["default_reminders"]:
-            rem = {"reminders": {"useDefault": False, "overrides": []}}
-            for r in reminders:
-                n, m = utils.parse_reminder(r)
-                rem["reminders"]["overrides"].append({"minutes": n, "method": m})
-
+        if rem := self._get_reminders(reminders):
             new_event = self._retry_with_backoff(
                 self.get_events().patch(
-                    calendarId=self.cals[0]["id"], eventId=new_event["id"], body=rem
+                    calendarId=calendar_id, eventId=event["id"], body={"reminders": rem}
                 )
             )
 
@@ -1242,8 +1241,16 @@ class GoogleCalendarInterface:
         return new_event
 
     def AddEvent(
-        self, title, where, start: datetime, end: datetime, descr, who, reminders, color
-    ):
+        self,
+        title,
+        where,
+        start: datetime,
+        end: datetime,
+        descr,
+        who,
+        reminders: list[EventReminder],
+        color,
+    ) -> "Event":
         if len(self.cals) != 1:
             # Calendar not specified. Prompt the user to select it
             writers = (self.ACCESS_OWNER, self.ACCESS_WRITER)
@@ -1279,9 +1286,13 @@ class GoogleCalendarInterface:
 
         event["attendees"] = [{"email": w} for w in who]
 
-        event = self._add_reminders(event, reminders)
+        if rem := self._get_reminders(reminders):
+            event["reminders"] = rem
+
         events = self.get_events()
-        request = events.insert(calendarId=self.cals[0]["id"], body=event)
+        request = events.insert(
+            calendarId=self.cals[0]["id"], body=event, sendUpdates="all"
+        )
         return self._retry_with_backoff(request)
 
     def ModifyEvents(self, work, search_text, start=None, end=None, expert=False):
@@ -1413,7 +1424,8 @@ class GoogleCalendarInterface:
                 else:
                     event["start"] = {"date": start}
 
-                event = self._add_reminders(event, reminders)
+                if rem := self._get_reminders(reminders):
+                    event["reminders"] = rem
 
                 # Can only have an end if we have a start, but not the other
                 # way around apparently...  If there is no end, use the start

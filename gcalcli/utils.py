@@ -16,35 +16,12 @@ fuzzy_date_parse = Calendar().parse
 fuzzy_datetime_parse = Calendar().parseDT
 
 
-REMINDER_REGEX = r"^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$"
-
-DURATION_REGEX = re.compile(
-    r"^((?P<days>[\.\d]+?)(?:d|day|days))?[ :]*"
-    r"((?P<hours>[\.\d]+?)(?:h|hour|hours))?[ :]*"
-    r"((?P<minutes>[\.\d]+?)(?:m|min|mins|minute|minutes))?[ :]*"
-    r"((?P<seconds>[\.\d]+?)(?:s|sec|secs|second|seconds))?$"
-)
-
-
-def parse_reminder(rem):
-    match = re.match(REMINDER_REGEX, rem)
-    if not match:
-        # Allow argparse to generate a message when parsing options
-        return None
-    n = int(match[1])
-    t = match[2]
-    m = match[3]
-    if t == "w":
-        n = n * 7 * 24 * 60
-    elif t == "d":
-        n = n * 24 * 60
-    elif t == "h":
-        n *= 60
-
-    if not m:
-        m = "popup"
-
-    return n, m
+DURATION_REGEX = re.compile(r"""
+    ^((?P<days>[\.\d]+?)(?:d|day|days))?[ :]*
+    ((?P<hours>[\.\d]+?)(?:h|hour|hours))?[ :]*
+    ((?P<minutes>[\.\d]+?)(?:m|min|mins|minute|minutes))?[ :]*
+    ((?P<seconds>[\.\d]+?)(?:s|sec|secs|second|seconds))?$
+""")
 
 
 def set_locale(new_locale):

@@ -4,8 +4,10 @@ import argparse
 import copy as _copy
 import datetime
 import locale
+import re
 import sys
 from shutil import get_terminal_size
+from typing import TYPE_CHECKING
 
 from oauth2client import tools
 
@@ -15,6 +17,9 @@ from . import utils
 from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
 from .details import DETAILS
 from .printer import valid_color_name
+
+if TYPE_CHECKING:
+    from googleapiclient._apis.calendar.v3 import EventReminder
 
 PROGRAM_OPTIONS = {
     "--client-id": {
@@ -85,6 +90,14 @@ PROGRAM_OPTIONS = {
     },
 }
 
+REMINDER_REGEX = re.compile(r"^(\d+)([wdhm]?)(?:\s+(popup|email))?$")
+MULTIPLY_COUNT_BY_MODIFIER = {
+    None: 1,
+    "h": 60,
+    "d": 60 * 24,
+    "w": 60 * 24 * 7,
+}
+
 
 class DetailsAction(argparse._AppendAction):
     def __call__(self, parser, namespace, value, option_string=None):
@@ -105,11 +118,18 @@ def validwidth(value):
     return ival
 
 
-def validreminder(value):
-    if not utils.parse_reminder(value):
+def validreminder(value: str) -> "EventReminder":
+    if not (match := re.match(REMINDER_REGEX, value)):
         msg = f"Not a valid reminder string: {value}"
         raise argparse.ArgumentTypeError(msg)
-    return value
+
+    time, modifier, method = match.groups()
+    minutes = int(time) * MULTIPLY_COUNT_BY_MODIFIER[modifier]
+    if not 0 < minutes < 40320:
+        msg = f"Reminder time must be between 1 and 40320 minutes: {value}"
+        raise argparse.ArgumentTypeError(msg)
+
+    return {"minutes": minutes, "method": method or "popup"}
 
 
 def get_details_parser():

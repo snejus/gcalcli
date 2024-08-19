@@ -73,14 +73,6 @@ def run_add_prompt(parsed_args, printer):
         parsed_args.duration = get_duration(printer, parsed_args.allday)
     if parsed_args.description is None:
         parsed_args.description = get_desc(printer)
-    if not parsed_args.reminders:
-        while True:
-            r = get_reminder(printer)
-
-            if r == ".":
-                break
-            n, m = utils.parse_reminder(str(r))
-            parsed_args.reminders.append(f"{n!s} {m}")
 
 
 def main() -> None:

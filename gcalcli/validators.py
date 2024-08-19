@@ -1,9 +1,9 @@
-import re
 from typing import Callable
 
+from .argparsers import validreminder
 from .exceptions import ValidationError
 from .printer import Printer
-from .utils import REMINDER_REGEX, get_time_from_str, get_timedelta_from_str
+from .utils import get_time_from_str, get_timedelta_from_str
 
 # TODO: in the future, pull these from the API
 # https://developers.google.com/calendar/v3/reference/colors
@@ -111,18 +111,6 @@ def non_blank_str_validator(input_str):
     return input_str
 
 
-def reminder_validator(input_str):
-    """Allows a string that matches utils.REMINDER_REGEX.
-    Raises ValidationError otherwise.
-    """
-    match = re.match(REMINDER_REGEX, input_str)
-    if match or input_str == ".":
-        return input_str
-    raise ValidationError(
-        "Expected format: <number><w|d|h|m> <popup|email|sms>. (Ctrl-C to exit)\n"
-    )
-
-
 def validate_input(validator_func: Callable[[str], str]) -> str:
     """Wrapper around Validator funcs."""
     inp_str = input()
@@ -164,4 +152,4 @@ STR_TO_INT = str_to_int_validator
 PARSABLE_DATE = parsable_date_validator
 PARSABLE_DURATION = parsable_duration_validator
 VALID_COLORS = color_validator
-REMINDER = reminder_validator
+REMINDER = validreminder
