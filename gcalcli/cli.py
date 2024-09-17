@@ -30,14 +30,7 @@ from .argparsers import get_argument_parser, handle_unparsed
 from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
-from .validators import (
-    get_desc,
-    get_duration,
-    get_location,
-    get_reminder,
-    get_start_dt,
-    get_title,
-)
+from .validators import get_start_dt, get_title
 
 CalName = namedtuple("CalName", ["name", "color"])
 
@@ -65,14 +58,8 @@ def parse_cal_names(cal_names):
 def run_add_prompt(parsed_args, printer):
     if parsed_args.title is None:
         parsed_args.title = get_title(printer)
-    if parsed_args.where is None:
-        parsed_args.where = get_location(printer)
     if parsed_args.when is None:
         parsed_args.when = get_start_dt(printer)
-    if parsed_args.duration is None:
-        parsed_args.duration = get_duration(printer, parsed_args.allday)
-    if parsed_args.description is None:
-        parsed_args.description = get_desc(printer)
 
 
 def main() -> None:
