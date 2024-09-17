@@ -302,7 +302,7 @@ def get_conflicts_parser():
     return conflicts_parser
 
 
-def get_start_end_parser():
+def get_start_end_parser() -> argparse.ArgumentParser:
     se_parser = argparse.ArgumentParser(add_help=False)
     se_parser.add_argument("start", type=utils.get_time_from_str, nargs="?")
     se_parser.add_argument("end", type=utils.get_time_from_str, nargs="?")

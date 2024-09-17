@@ -14,7 +14,7 @@ from collections import namedtuple
 from csv import DictReader, excel_tab
 from datetime import date, datetime, timedelta
 from itertools import chain, takewhile
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Callable, List
 from unicodedata import east_asian_width
 
 import httplib2
@@ -138,7 +138,7 @@ class GoogleCalendarInterface:
             return dt.replace(tzinfo=tzlocal())
         return dt.astimezone(tzlocal())
 
-    def _retry_with_backoff(self, method: "HttpRequest"):
+    def _retry_with_backoff(self, method: HttpRequest):
         for n in range(self.max_retries):
             try:
                 return method.execute()
@@ -192,7 +192,7 @@ class GoogleCalendarInterface:
 
         return self.cal_service
 
-    def get_events(self) -> "CalendarResource.EventsResource":
+    def get_events(self) -> CalendarResource.EventsResource:
         return self.get_cal_service().events()
 
     def _get_cached(self) -> None:
@@ -821,12 +821,12 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, "default")
 
-    def delete(self, cal_id, event_id):
+    def delete(self, cal_id: str, event_id: str) -> None:
         self._retry_with_backoff(
             self.get_events().delete(calendarId=cal_id, eventId=event_id)
         )
 
-    def _delete_event(self, event) -> None:
+    def _delete_event(self, event: Event) -> None:
         cal_id = event["gcalcli_cal"]["id"]
         event_id = event["id"]
 
@@ -954,7 +954,13 @@ class GoogleCalendarInterface:
 
             self._PrintEvent(event, event["s"].strftime("\n%Y-%m-%d"))
 
-    def _iterate_events(self, start_datetime, event_list, year_date=False, work=None):
+    def _iterate_events(
+        self,
+        _: datetime,
+        event_list: list[Event],
+        year_date: bool = False,
+        work: Callable[[Event], None] | None = None,
+    ):
         selected = 0
 
         if len(event_list) == 0:
@@ -984,7 +990,7 @@ class GoogleCalendarInterface:
 
         return selected
 
-    def _GetAllEvents(self, cal, events, end):
+    def _GetAllEvents(self, cal, events: list[Event], end) -> list[Event]:
         event_list = []
 
         while 1 and "items" in events:
@@ -1035,17 +1041,19 @@ class GoogleCalendarInterface:
 
         return event_list
 
-    def _search_for_events(self, start, end, search_text):
+    def _search_for_events(
+        self, start: datetime | None, end: datetime | None, search_text: str
+    ) -> list[Event]:
+        kwargs = {"q": search_text, "singleEvents": True}
+        if start:
+            kwargs["timeMin"] = start.isoformat()
+        if end:
+            kwargs["timeMax"] = end.isoformat()
+
         event_list = []
         for cal in self.cals:
             events = self._retry_with_backoff(
-                self.get_events().list(
-                    calendarId=cal["id"],
-                    timeMin=start.isoformat() if start else None,
-                    timeMax=end.isoformat() if end else None,
-                    q=search_text or None,
-                    singleEvents=True,
-                )
+                self.get_events().list(**{**kwargs, "calendarId": cal["id"]})
             )
             event_list.extend(self._GetAllEvents(cal, events, end))
 
@@ -1295,7 +1303,14 @@ class GoogleCalendarInterface:
         )
         return self._retry_with_backoff(request)
 
-    def ModifyEvents(self, work, search_text, start=None, end=None, expert=False):
+    def ModifyEvents(
+        self,
+        work: Callable[[Event], None],
+        search_text: str,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        expert: bool = False,
+    ):
         if not search_text:
             raise GcalcliError("The empty string would get *ALL* events")
 
