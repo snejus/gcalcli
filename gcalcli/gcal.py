@@ -971,6 +971,25 @@ class GoogleCalendarInterface:
         day_format = "\n%Y-%m-%d" if year_date else "\n%a %b %d"
         day = ""
 
+        now = datetime.now(tz=tzlocal())
+        event_list.sort(
+            key=lambda e: abs(
+                now
+                - datetime.fromisoformat(
+                    (
+                        (
+                            dt.replace("Z", "+00:00")
+                            if (dt := s.get("dateTime"))
+                            else None
+                        )
+                        or s.get("date")
+                        or ""
+                    )
+                    if (s := e["start"])
+                    else now.isoformat()
+                ).astimezone(tzlocal())
+            )
+        )
         for event in event_list:
             if self.options["ignore_started"] and (event["s"] < self.now):
                 continue
